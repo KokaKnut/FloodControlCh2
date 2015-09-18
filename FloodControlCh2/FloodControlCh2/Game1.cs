@@ -32,7 +32,7 @@ namespace FloodControlCh2
         enum GameStates { TitleScreen, Playing };
         GameStates gameState = GameStates.TitleScreen;
 
-        Rectangle EmptyPiece = new Rectangle(1, 274, 40, 40);
+        Rectangle EmptyPiece = new Rectangle(1, 247, 40, 40);
 
         const float MinTimeSinceLastInput = .25f;
         float timeSinceLastInput = 0.0f;
@@ -72,9 +72,9 @@ namespace FloodControlCh2
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
-            playingPieces = Content.Load<Texture2D>(@"Textures\Tile_Sheet");
-            backgroundScreen = Content.Load<Texture2D>(@"Textures\Background");
-            titleScreen = Content.Load<Texture2D>(@"Textures\TitleScreen");
+            playingPieces = Content.Load<Texture2D>(@"Tile_Sheet");
+            backgroundScreen = Content.Load<Texture2D>(@"Background");
+            titleScreen = Content.Load<Texture2D>(@"TitleScreen");
         }
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace FloodControlCh2
                         gameBoard.ClearBoard();
                         gameBoard.GenerateNewPieces(false);
                         playerScore = 0;
-                        gameState = GameStates.Playing
+                        gameState = GameStates.Playing;
                     }
                     break;
 
@@ -146,7 +146,7 @@ namespace FloodControlCh2
 
             // TODO: Add your drawing code here
 
-            if (gameState == GameStates.Playing)
+            if (gameState == GameStates.TitleScreen)
             {
                 spriteBatch.Begin();
                 spriteBatch.Draw(titleScreen, 
@@ -171,16 +171,16 @@ namespace FloodControlCh2
                     for (int y = 0; y < GameBoard.GameBoardHeight; y++)
                     {
                         int pixelX = (int)gameBoardDisplayOrigin.X +
-                            (x + GamePiece.PieceWidth);
+                            (x * GamePiece.PieceWidth);
                         int pixelY = (int)gameBoardDisplayOrigin.Y +
-                            (y + GamePiece.PieceHeight);
+                            (y * GamePiece.PieceHeight);
 
                         spriteBatch.Draw(
                             playingPieces, new Rectangle(
                                 pixelX,
                                 pixelY,
                                 GamePiece.PieceWidth,
-                                GamePiece.PieceHight),
+                                GamePiece.PieceHeight),
                             EmptyPiece,
                             Color.White);
 
@@ -189,8 +189,8 @@ namespace FloodControlCh2
                                 pixelX,
                                 pixelY,
                                 GamePiece.PieceWidth,
-                                GamePiece.PieceHight),
-                            GameBoard.GetSourceRect(x, y),
+                                GamePiece.PieceHeight),
+                            gameBoard.GetSourceRect(x, y),
                             Color.White);
                     }
 
@@ -211,7 +211,42 @@ namespace FloodControlCh2
         {
             if (WaterChain.Count > 0)
             {
-                Vector2
+                Vector2 LastPipe = WaterChain[WaterChain.Count - 1];
+
+                if (LastPipe.X == GameBoard.GameBoardWidth - 1)
+                {
+                    if (gameBoard.HasConnector((int)LastPipe.X, (int)LastPipe.Y, "Right"))
+                    {
+                        playerScore += DetermineScore(WaterChain.Count);
+
+                        foreach (Vector2 ScoringSquare in WaterChain)
+                        {
+                            gameBoard.SetSquare((int)ScoringSquare.X, (int)ScoringSquare.Y, "Empty");
+                        }
+                    }
+                }
+            }
+        }
+
+        private void HandleMouseInput(MouseState mouseState)
+        {
+            int x = ((mouseState.X - (int)gameBoardDisplayOrigin.X) / GamePiece.PieceWidth);
+
+            int y = ((mouseState.Y - (int)gameBoardDisplayOrigin.Y) / GamePiece.PieceHeight);
+
+            if ((x >= 0) && (x < GameBoard.GameBoardWidth) && (y >= 0) && (y < GameBoard.GameBoardHeight))
+            {
+                if (mouseState.LeftButton == ButtonState.Pressed)
+                {
+                    gameBoard.RotatePiece(x, y, false);
+                    timeSinceLastInput = 0.0f;
+                }
+
+                if (mouseState.RightButton == ButtonState.Pressed)
+                {
+                    gameBoard.RotatePiece(x, y, true);
+                    timeSinceLastInput = 0.0f;
+                }
             }
         }
     }
